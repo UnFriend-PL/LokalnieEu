@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using LokalnieEU.Models.User;
 using LokalnieEU.Services;
+using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace LokalnieEU.Controllers
 {
@@ -31,7 +34,7 @@ namespace LokalnieEU.Controllers
         }
 
         [HttpPost("Login")]
-        public async Task<ActionResult<ServiceResponse<string>>> Login([FromBody] UserLoginDto userDto)
+        public async Task<ActionResult<ServiceResponse<UserResponse>>> Login([FromBody] UserLoginDto userDto)
         {
             var response = await _userService.Authenticate(userDto);
 
@@ -42,24 +45,48 @@ namespace LokalnieEU.Controllers
 
             return Ok(response);
         }
-        //private string CreateUserToken(User user)
-        //{
-        //    List<Claim> claims = new List<Claim>();
-        //    {
-        //        new Claim(ClaimTypes.Name, user.Login);
-        //        new Claim(ClaimTypes.Role, "User");
-        //    };
 
-        //    //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value!)); 
-        //    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value!));
-        //    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
-        //    var token = new JwtSecurityToken(
-        //        claims: claims,
-        //        expires: DateTime.Now.AddDays(1),
-        //        signingCredentials: creds
-        //    );
-        //    var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-        //    return jwt;
-        //}
+        [Authorize(Roles = "user, admin")]
+        [HttpPut("UpdateUser")]
+        public async Task<ActionResult<ServiceResponse<UserResponse>>> UpdateUser([FromBody] UpdateUserDto userDto)
+        {
+            try
+            {
+                // Pobierz token użytkownika z nagłówka autoryzacji
+                var authorizationHeader = HttpContext.Request.Headers["Authorization"].ToString();
+                var token = authorizationHeader.Substring("Bearer ".Length);
+
+                var response = await _userService.UpdateUser(token, userDto);
+
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new ServiceResponse<UserResponse> { Success = false, Message = ex.Message });
+            }
+
+
+            //try
+            //{
+            //    int userId = _userService.GetUserIdFromClaims();
+            //    var response = await _userService.UpdateUser(userId, userDto);
+
+            //    if (!response.Success)
+            //    {
+            //        return BadRequest(response);
+            //    }
+
+            //    return Ok(response);
+            //}
+            //catch (Exception ex)
+            //{
+            //    return Unauthorized(new ServiceResponse<User> { Success = false, Message = ex.Message });
+            //}
+        }
     }
 }

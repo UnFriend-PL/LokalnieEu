@@ -75,7 +75,7 @@
     <Menu />
     <h1>Register</h1>
     {#if errorMessage}
-        <p class="error">{errorMessage}</p>
+        <p class="error text-danger">{errorMessage}</p>
     {/if}
     <div class="form-group">
         <label for="name">Name</label>

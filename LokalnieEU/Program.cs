@@ -1,5 +1,6 @@
 using LokalnieEU.Database;
 using LokalnieEU.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +26,8 @@ namespace LokalnieEU
                                   });
             });
             // Add services to the container.
+            builder.Services.AddHttpContextAccessor();
+
             builder.Services.AddDbContext<DataContext>(options =>
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -52,10 +55,9 @@ namespace LokalnieEU
                     ValidateIssuerSigningKey = true,
                     ValidateAudience = false,
                     ValidateIssuer = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value!))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value!))
                 };
             });
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -66,11 +68,21 @@ namespace LokalnieEU
             }
 
             app.UseHttpsRedirection();
-            //app.UseCors();
+
+            // U¿ywaj routingu przed autoryzacj¹
+            app.UseRouting();
+
+            // U¿yj CORS po routingu, ale przed autoryzacj¹
+            app.UseCors("MyPolicy");
+
+            app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseCors("MyPolicy");
-            app.MapControllers();
+            // Definiuj punkty koñcowe po autoryzacji
+            _ = app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
 
             app.Run();
         }

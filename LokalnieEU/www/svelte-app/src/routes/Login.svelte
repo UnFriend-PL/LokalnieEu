@@ -1,9 +1,10 @@
 <script>
     import { navigate } from "svelte-routing";
     import { API_URL } from "../config";
-    import TokenService from "../services/TokenService";
     import { isValidEmail, isValidPassword } from "../validation/validate";
     import Menu from "./Menu.svelte";
+    import UserService from "../services/UserService";
+
     let email = "";
     let password = "";
     let loginAttempts = 0;
@@ -42,7 +43,9 @@
             const data = await response.json();
 
             if (data.success) {
-                TokenService.saveToken(data.data);
+                // TokenService.saveToken(data.data.token);
+                UserService.setUser(data.data);
+                // console.log(data);
                 goMain();
             } else {
                 console.error("Error:", data.message);
@@ -59,7 +62,7 @@
     <Menu />
     <h1>Login</h1>
     {#if errorMessage}
-        <p class="error">{errorMessage}</p>
+        <p class="error text-danger">{errorMessage}</p>
     {/if}
     <div class="form-group">
         <label for="email">Email</label>

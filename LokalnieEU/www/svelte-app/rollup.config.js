@@ -21,6 +21,11 @@ function serve() {
 
 	return {
 		writeBundle() {
+			if (!started) {
+				started = true;
+				sirv('public', { historyApiFallback: true });
+
+			};
 			if (server) return;
 			server = spawn('npm', ['run', 'start', '--', '--dev'], {
 				stdio: ['ignore', 'inherit', 'inherit'],

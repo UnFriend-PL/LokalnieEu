@@ -1,21 +1,28 @@
 ﻿using LokalnieEU.Database;
 using LokalnieEU.Models.User;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Nodes;
+
 namespace LokalnieEU.Services
 {
     public class UserService : IUserService
     {
         private readonly DataContext _context;
         public readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserService(DataContext context, IConfiguration configuration)
+        public UserService(DataContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _configuration = configuration;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ServiceResponse<User>> Register(UserDto userDto)
@@ -54,9 +61,9 @@ namespace LokalnieEU.Services
             return response;
         }
 
-        public async Task<ServiceResponse<string>> Authenticate(UserLoginDto userDto)
+        public async Task<ServiceResponse<UserResponse>> Authenticate(UserLoginDto userDto)
         {
-            ServiceResponse<string> response = new ServiceResponse<string>();
+            ServiceResponse<UserResponse> response = new ServiceResponse<UserResponse>();
             User user = await _context.Users.SingleOrDefaultAsync(x => x.Email == userDto.Email);
 
             if (user == null)
@@ -73,10 +80,73 @@ namespace LokalnieEU.Services
             {
                 user.LastLoginTime = DateTime.Now;
                 await _context.SaveChangesAsync();
-                response.Data = await CreateUserTokenAsync(user); // metoda tworzenia tokena
+                string token = await CreateUserTokenAsync(user);
+                UserResponse userResponse = new UserResponse(user, token);
+                response.Data = userResponse;
+            }
+            return response;
+        }
+
+        public async Task<ServiceResponse<UserResponse>> UpdateUser(string token, UpdateUserDto userDto)
+        {
+            ServiceResponse<UserResponse> response = new ServiceResponse<UserResponse>();
+
+            try
+            {
+                //var userIdClaim = GetUserIdFromToken(token);
+                //if (userIdClaim == null)
+                //{
+                //    response.Success = false;
+                //    response.Message = "Invalid token.";
+                //    return response;
+                //}
+
+                //int id = int.Parse(userIdClaim.Value);
+
+                User user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == userDto.UserId);
+
+                if (user == null)
+                {
+                    response.Success = false;
+                    response.Message = "User not found.";
+                }
+                else
+                {
+                    user.Name = userDto.Name;
+                    user.Surname = userDto.Surname;
+                    user.Email = userDto.Email;
+                    user.Phone = userDto.Phone;
+
+                    if (!string.IsNullOrEmpty(userDto.Password))
+                    {
+                        CreatePasswordHash(userDto.Password, out byte[] passwordHash, out byte[] passwordSalt);
+                        user.PasswordHash = passwordHash;
+                        user.PasswordSalt = passwordSalt;
+                    }
+
+                    user.LastModifiedTime = DateTime.Now;
+
+                    _context.Users.Update(user);
+                    await _context.SaveChangesAsync();
+
+                    UserResponse userResponse = new UserResponse(user, token);
+                    response.Data = userResponse;
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
             }
 
             return response;
+        }
+
+        private Claim GetUserIdFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var claimsPrincipal = tokenHandler.ValidateToken(token, new TokenValidationParameters(), out _);
+            return claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier);
         }
         private async Task<bool> IsEmailAllowedForRole(string email, string role)
         {
@@ -112,12 +182,13 @@ namespace LokalnieEU.Services
         private async Task<string> CreateUserTokenAsync(User user, string role = "user", bool morePermission = false)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value!); // Uwaga: Twój klucz powinien być przechowywany bezpiecznie, np. w pliku konfiguracyjnym
+            var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value); // Uwaga: Twój klucz powinien być przechowywany bezpiecznie, np. w pliku konfiguracyjnym
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-            new Claim(ClaimTypes.Name, user.Email.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), 
+                    new Claim(ClaimTypes.Name, user.Email.ToString()),
                     // Możesz dodać więcej claimów według potrzeb
                 }),
                 Expires = DateTime.UtcNow.AddDays(7), // Token wygasa po 7 dniach
@@ -138,5 +209,6 @@ namespace LokalnieEU.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
     }
 }

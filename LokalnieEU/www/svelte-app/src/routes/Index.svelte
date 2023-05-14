@@ -1,6 +1,15 @@
 <script>
     import { link } from "svelte-routing";
     import Menu from "./Menu.svelte";
+    import UserService from "../services/UserService";
+    import { onMount } from "svelte";
+
+    let user;
+
+    onMount(async () => {
+        user = await UserService.getUser();
+        console.log(user.name);
+    });
 </script>
 
 <div class="container">
@@ -32,7 +41,11 @@
     </nav>
 
     <div class="jumbotron">
-        <h1 class="display-1">Witaj w naszej aplikacji!</h1>
+        {#if user != null}
+            <h1 class="display-1">Witaj {user.name}!</h1>
+        {:else}
+            <h1 class="display-1">Witaj w naszej aplikacji!</h1>
+        {/if}
         <p class="lead">
             Ta aplikacja została stworzona przy użyciu Svelte i Bootstrap.
         </p>
