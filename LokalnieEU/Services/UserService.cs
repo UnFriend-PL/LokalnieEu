@@ -93,16 +93,6 @@ namespace LokalnieEU.Services
 
             try
             {
-                //var userIdClaim = GetUserIdFromToken(token);
-                //if (userIdClaim == null)
-                //{
-                //    response.Success = false;
-                //    response.Message = "Invalid token.";
-                //    return response;
-                //}
-
-                //int id = int.Parse(userIdClaim.Value);
-
                 User user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == userDto.UserId);
 
                 if (user == null)
