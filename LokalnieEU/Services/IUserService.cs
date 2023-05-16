@@ -10,5 +10,6 @@ namespace LokalnieEU.Services
         Task<ServiceResponse<User>> Register(UserDto userDto);
         Task<ServiceResponse<UserResponse>> Authenticate(UserLoginDto userDto);
         Task<ServiceResponse<UserResponse>> UpdateUser(string jwt, UpdateUserDto userDto);
+        Task<ServiceResponse<string>> UpdateUserPasswordAsync(string jwt, UpdateUserPasswordDto userPasswordDto);
     }
 }

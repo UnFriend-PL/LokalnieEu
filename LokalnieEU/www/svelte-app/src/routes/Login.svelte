@@ -44,7 +44,7 @@
 
             if (data.success) {
                 // TokenService.saveToken(data.data.token);
-                UserService.setUser(data.data);
+                await UserService.setUser(data.data);
                 // console.log(data);
                 goMain();
             } else {

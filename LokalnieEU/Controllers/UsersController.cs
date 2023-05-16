@@ -69,24 +69,30 @@ namespace LokalnieEU.Controllers
             {
                 return Unauthorized(new ServiceResponse<UserResponse> { Success = false, Message = ex.Message });
             }
+        }
+        [Authorize(Roles = "user, admin")]
+        [HttpPut("UpdateUserPassword")]
+        public async Task<ActionResult<ServiceResponse<string>>> UpdateUserPassword([FromBody] UpdateUserPasswordDto userPasswordDto)
+        {
+            try
+            {
+                // Pobierz token użytkownika z nagłówka autoryzacji
+                var authorizationHeader = HttpContext.Request.Headers["Authorization"].ToString();
+                var token = authorizationHeader.Substring("Bearer ".Length); ;
 
+                var response = await _userService.UpdateUserPasswordAsync(token, userPasswordDto);
 
-            //try
-            //{
-            //    int userId = _userService.GetUserIdFromClaims();
-            //    var response = await _userService.UpdateUser(userId, userDto);
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
 
-            //    if (!response.Success)
-            //    {
-            //        return BadRequest(response);
-            //    }
-
-            //    return Ok(response);
-            //}
-            //catch (Exception ex)
-            //{
-            //    return Unauthorized(new ServiceResponse<User> { Success = false, Message = ex.Message });
-            //}
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new ServiceResponse<UserResponse> { Success = false, Message = ex.Message });
+            }
         }
     }
 }

@@ -14,11 +14,14 @@
     let name = "";
     let surname = "";
     let password = "";
+    let repeatPassword = "";
     let email = "";
     let phone = "";
     let errorMessage = "";
+    let isSubmitting = false;
 
     async function register() {
+        isSubmitting = true;
         if (!isValidEmail(email)) {
             errorMessage = "Nieprawidłowy format e-maila.";
             return;
@@ -27,6 +30,10 @@
         if (!isValidPassword(password)) {
             errorMessage =
                 "Hasło musi zawierać co najmniej 8 znaków, w tym co najmniej jeden znak specjalny.";
+            return;
+        }
+        if (password != repeatPassword) {
+            errorMessage = "Hasła muszą być takie same!";
             return;
         }
 
@@ -67,6 +74,8 @@
             }
         } catch (error) {
             console.error("Error:", error);
+        } finally {
+            isSubmitting = false;
         }
     }
 </script>
@@ -100,6 +109,15 @@
         />
     </div>
     <div class="form-group">
+        <label for="repeatPassword">Repeat Password</label>
+        <input
+            type="Password"
+            bind:value={repeatPassword}
+            class="form-control"
+            id="repeatPassword"
+        />
+    </div>
+    <div class="form-group">
         <label for="email">Email</label>
         <input
             type="email"
@@ -112,5 +130,7 @@
         <label for="phone">Phone</label>
         <input type="tel" bind:value={phone} class="form-control" id="phone" />
     </div>
-    <button on:click={register} class="btn btn-primary">Submit</button>
+    <button on:click={register} class="btn btn-primary" disabled={isSubmitting}
+        >Zarejestruj</button
+    >
 </div>
