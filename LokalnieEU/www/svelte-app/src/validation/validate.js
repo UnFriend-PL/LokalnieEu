@@ -14,3 +14,9 @@ export const isValidPhone = (phone) => {
     const regex = /^\d{9}$/;
     return regex.test(phone);
 };
+
+export default {
+    isValidEmail,
+    isValidPassword,
+    isValidPhone
+}

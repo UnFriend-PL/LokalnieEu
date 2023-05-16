@@ -1,15 +1,24 @@
 <script>
-    import { link } from "svelte-routing";
+    import { link, Link } from "svelte-routing";
     import Menu from "./Menu.svelte";
     import UserService from "../services/UserService";
     import { onMount } from "svelte";
 
     let user;
-
+    UserService.USER.subscribe((value) => {
+        user = value;
+    });
     onMount(async () => {
         user = await UserService.getUser();
-        console.log(user.name);
+        if (user !== null) {
+            console.log(user.name);
+        }
     });
+
+    async function logout() {
+        await UserService.logout();
+        window.location.href = "/"; // Przekierowanie na stronę główną po wylogowaniu
+    }
 </script>
 
 <div class="container">
@@ -30,12 +39,22 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/login" use:link>Login</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/register" use:link>Register</a>
-                </li>
+                {#if user === null}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login" use:link>Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register" use:link
+                            >Register</a
+                        >
+                    </li>
+                {:else}
+                    <li class="nav-item">
+                        <Link class="nav-link" to="/" on:click={logout}
+                            >Log out</Link
+                        >
+                    </li>
+                {/if}
             </ul>
         </div>
     </nav>

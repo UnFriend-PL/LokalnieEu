@@ -1,6 +1,7 @@
 ﻿using LokalnieEU.Database;
 using LokalnieEU.Models.User;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
@@ -93,7 +94,9 @@ namespace LokalnieEU.Services
 
             try
             {
-                User user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == userDto.UserId);
+                int userId = GetUserIdFromToken(token);
+
+                User user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == userId);
 
                 if (user == null)
                 {
@@ -131,12 +134,68 @@ namespace LokalnieEU.Services
 
             return response;
         }
+        public async Task<ServiceResponse<string>> UpdateUserPasswordAsync(string token, UpdateUserPasswordDto userPasswordDto)
+        {
+            ServiceResponse<string> response = new ServiceResponse<string>();
 
-        private Claim GetUserIdFromToken(string token)
+            try
+            {
+                int userId = GetUserIdFromToken(token);
+
+                User user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == userId);
+
+                if (user == null)
+                {
+                    response.Success = false;
+                    response.Message = "User not found.";
+                }
+                else
+                {
+                    if (VerifyPasswordHash(userPasswordDto.OldPassword, user.PasswordHash, user.PasswordSalt))
+                    {
+                        CreatePasswordHash(userPasswordDto.NewPassword, out byte[] newPasswordHash, out byte[] newPasswordSalt);
+                        user.PasswordHash = newPasswordHash;
+                        user.PasswordSalt = newPasswordSalt;
+
+                        user.LastModifiedTime = DateTime.Now;
+
+                        _context.Users.Update(user);
+                        await _context.SaveChangesAsync();
+
+                        response.Data = "Password changed";
+                    }
+                    else
+                    {
+                        response.Success = false;
+                        response.Message = "Incorrect old password.";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = ex.Message;
+            }
+
+            return response;
+        }
+        private int GetUserIdFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var claimsPrincipal = tokenHandler.ValidateToken(token, new TokenValidationParameters(), out _);
-            return claimsPrincipal?.FindFirst(ClaimTypes.NameIdentifier);
+            var key = Encoding.ASCII.GetBytes(_configuration.GetSection("AppSettings:Token").Value);
+
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = false,
+                ValidateAudience = false
+            }, out SecurityToken validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "nameid").Value);
+
+            return userId;
         }
         private async Task<bool> IsEmailAllowedForRole(string email, string role)
         {
@@ -199,6 +258,7 @@ namespace LokalnieEU.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
 
     }
 }
