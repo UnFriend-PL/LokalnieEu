@@ -9,12 +9,14 @@ using System.Text;
 
 namespace LokalnieEU
 {
-    public class Program
+    public class Server
     {
         public static void Main(string[] args)
         {
+            // Start building the web application
             var builder = WebApplication.CreateBuilder(args);
 
+            // Configure Cross-Origin Resource Sharing (CORS) for local development
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy(name: "MyPolicy",
@@ -25,16 +27,19 @@ namespace LokalnieEU
                                              .AllowAnyMethod();
                                   });
             });
+
             // Add services to the container.
             builder.Services.AddHttpContextAccessor();
 
+            // Configure the database context
             builder.Services.AddDbContext<DataContext>(options =>
             {
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-
             });
+
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+            // Configure Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddScoped<IUserService, UserService>();
 
@@ -48,6 +53,8 @@ namespace LokalnieEU
                 });
                 options.OperationFilter<SecurityRequirementsOperationFilter>();
             });
+
+            // Configure JWT authentication
             builder.Services.AddAuthentication().AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -58,32 +65,34 @@ namespace LokalnieEU
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value!))
                 };
             });
+
+            // Build the application
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
+                // Enable Swagger in development environment
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
             app.UseHttpsRedirection();
 
-            // U¿ywaj routingu przed autoryzacj¹
+            // Use routing before authorization
             app.UseRouting();
 
-            // U¿yj CORS po routingu, ale przed autoryzacj¹
+            // Use CORS after routing, but before authorization
             app.UseCors("MyPolicy");
 
+            // Use authentication and authorization middleware
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Definiuj punkty koñcowe po autoryzacji
-            _ = app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            // Define endpoints after authorization using endpoint registration
+            app.MapControllers();
 
+            // Run the application
             app.Run();
         }
     }
