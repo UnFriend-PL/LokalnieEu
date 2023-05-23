@@ -19,11 +19,7 @@ Set up the database: Set up your database and update the connection string in th
 Run the application: Navigate to the root directory of the project in your terminal and run the following command:
 dotnet run
 
-## Usage
-This section should provide information on how to use the application. This could include details about starting the application, making API calls, and any other important details a user of the application would need to know.
-
 ## APIs
-This section should provide a detailed description of the available APIs. It should describe the endpoints, request methods, request parameters, and expected responses. Here is a brief overview based on the provided code:
 
 ### Register
 Endpoint: POST /api/Users/Register
