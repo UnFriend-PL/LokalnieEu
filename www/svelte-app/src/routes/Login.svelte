@@ -7,15 +7,10 @@
 
     let email = "";
     let password = "";
-    let loginAttempts = 0;
     let errorMessage = "";
 
-    const goMain = () => {
-        navigate("/");
-    };
-
     async function loginHandle() {
-        // Walidacja formularza
+        // Form validation
         if (!isValidEmail(email)) {
             errorMessage = "Nieprawidłowy format e-maila.";
             return;
@@ -26,10 +21,7 @@
             return;
         }
 
-        const userDto = {
-            email: email,
-            password: password,
-        };
+        const userDto = { email, password };
 
         try {
             const response = await fetch(`${API_URL}/Users/Login`, {
@@ -43,13 +35,10 @@
             const data = await response.json();
 
             if (data.success) {
-                // TokenService.saveToken(data.data.token);
                 await UserService.setUser(data.data);
-                // console.log(data);
-                goMain();
+                navigate("/"); // Directly navigate to main
             } else {
                 console.error("Error:", data.message);
-                loginAttempts++;
                 errorMessage = "Błąd: Nieprawidłowy e-mail lub hasło.";
             }
         } catch (error) {
@@ -58,8 +47,8 @@
     }
 </script>
 
+<Menu />
 <div class="container">
-    <Menu />
     <h1>Login</h1>
     {#if errorMessage}
         <p class="error text-danger">{errorMessage}</p>

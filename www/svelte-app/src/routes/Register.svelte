@@ -7,9 +7,6 @@
         isValidPhone,
     } from "../validation/validate";
     import Menu from "./Menu.svelte";
-    const go_login = () => {
-        navigate("/login");
-    };
 
     let name = "";
     let surname = "";
@@ -22,55 +19,43 @@
 
     async function register() {
         isSubmitting = true;
-        if (!isValidEmail(email)) {
-            errorMessage = "Nieprawidłowy format e-maila.";
+
+        if (
+            !isValidEmail(email) ||
+            !isValidPassword(password) ||
+            password != repeatPassword ||
+            !isValidPhone(phone)
+        ) {
+            errorMessage = !isValidEmail(email)
+                ? "Nieprawidłowy format e-maila."
+                : !isValidPassword(password)
+                ? "Hasło musi zawierać co najmniej 8 znaków, w tym co najmniej jeden znak specjalny."
+                : password != repeatPassword
+                ? "Hasła muszą być takie same!"
+                : "Nieprawidłowy format numeru telefonu.";
+            isSubmitting = false;
             return;
         }
 
-        if (!isValidPassword(password)) {
-            errorMessage =
-                "Hasło musi zawierać co najmniej 8 znaków, w tym co najmniej jeden znak specjalny.";
-            return;
-        }
-        if (password != repeatPassword) {
-            errorMessage = "Hasła muszą być takie same!";
-            return;
-        }
-
-        if (!isValidPhone(phone)) {
-            errorMessage = "Nieprawidłowy format numeru telefonu.";
-            return;
-        }
-
-        const userDto = {
-            name: name,
-            surname: surname,
-            email: email,
-            password: password,
-            phone: phone,
-        };
         try {
             const response = await fetch(`${API_URL}/Users/Register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(userDto),
+                body: JSON.stringify({ name, surname, email, password, phone }),
             });
 
             const data = await response.json();
 
             if (data.success) {
-                go_login();
+                navigate("/login");
             } else {
-                if (data.message === "User already exists.") {
-                    errorMessage =
-                        "Użytkownik z tym adresem e-mail już istnieje.";
-                } else {
-                    console.error("Error:", data.message);
-                    errorMessage =
-                        "Nie udało się zarejestrować. Spróbuj ponownie.";
-                }
+                errorMessage =
+                    data.message === "User already exists."
+                        ? "Użytkownik z tym adresem e-mail już istnieje."
+                        : "Nie udało się zarejestrować. Spróbuj ponownie.";
+                console.error("Error:", data.message);
             }
         } catch (error) {
             console.error("Error:", error);
@@ -80,8 +65,9 @@
     }
 </script>
 
+<Menu />
+
 <div class="container">
-    <Menu />
     <h1>Register</h1>
     {#if errorMessage}
         <p class="error text-danger">{errorMessage}</p>

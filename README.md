@@ -2,11 +2,14 @@
 
 LokalnieEU is an ASP.NET Core application that provides APIs for user registration, authentication, and management.
 
+The frontend of the application is built with Svelte and it is located at `\www\svelte-app`.
+
 ## Table of Contents
 1. [Installation](#installation)
 2. [Usage](#usage)
-3. [APIs](#apis)
-4. [License](#license)
+3. [Frontend](#frontend)
+4. [APIs](#apis)
+5. [License](#license)
 
 ## Installation
 **Clone the repository**: Clone the LokalnieEU repository to your local machine using the following command in your terminal:
@@ -18,8 +21,20 @@ Set up the database: Set up your database and update the connection string in th
 
 Run the application: Navigate to the root directory of the project in your terminal and run the following command:
 dotnet run
+## Frontend
+The frontend of the application is built with Svelte. To run the frontend application, navigate to the \www\svelte-app directory and run the following commands:
+Install the dependencies:
+```bash
+npm install
+```
+Start the application:
+```bash
+npm run dev
+```
+The application will be available at http://localhost:8080.
 
 ## APIs
+This section should provide a detailed description of the available APIs. It should describe the endpoints, request methods, request parameters, and expected responses. Here is a brief overview based on the provided code:
 
 ### Register
 Endpoint: POST /api/Users/Register

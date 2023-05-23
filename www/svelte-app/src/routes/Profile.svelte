@@ -7,100 +7,70 @@
     import validation from "../validation/validate";
 
     let user;
-    UserService.USER.subscribe((value) => {
-        user = value;
-    });
+    let password = "";
+    let oldPass = "";
+    let repeatPassword = "";
+    let errorMessage = "";
+
     onMount(async () => {
+        UserService.USER.subscribe((value) => {
+            user = value;
+        });
         user = await UserService.getUser();
     });
 
-    let repeatPassword = "";
-    let password = "";
-    let oldPass = "";
-    let errorMessage = "";
+    async function handleRequest(url, method, body) {
+        const response = await fetch(`${API_URL}/${url}`, {
+            method: method,
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${user.token}`,
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            console.log(response);
+        }
+
+        const updatedUser = await response.json();
+        if (updatedUser.success) {
+            await UserService.setUser(updatedUser.data);
+            navigate("/");
+        } else {
+            console.log(updatedUser.message);
+        }
+    }
 
     async function changePass() {
-        if (!validation.isValidPassword(password)) {
+        if (
+            !validation.isValidPassword(password) ||
+            password != repeatPassword
+        ) {
             errorMessage =
-                "Hasło musi zawierać co najmniej 8 znaków, w tym co najmniej jeden znak specjalny.";
+                password != repeatPassword
+                    ? "Hasła muszą być takie same!"
+                    : "Hasło musi zawierać co najmniej 8 znaków, w tym co najmniej jeden znak specjalny.";
             return;
         }
-        if (password != repeatPassword) {
-            errorMessage = "Hasła muszą być takie same!";
-            return;
-        }
 
-        try {
-            var userDto = {
-                userId: user.id,
-                oldPassword: oldPass,
-                newPassword: password,
-            };
-            const response = await fetch(
-                `${API_URL}/Users/UpdateUserPassword`,
-                {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${user.token}`,
-                    },
-                    body: JSON.stringify(userDto),
-                }
-            );
+        const userDto = {
+            userId: user.id,
+            oldPassword: oldPass,
+            newPassword: password,
+        };
 
-            if (!response.ok) {
-                console.log(response);
-            }
-
-            const updatedUser = await response.json();
-            if (updatedUser.success) {
-                await UserService.setUser(updatedUser.data);
-                navigate("/");
-            } else {
-                console.log(updatedUser.message);
-            }
-        } catch (error) {
-            console.log(
-                "There was a problem with the fetch operation: ",
-                error.message
-            );
-        }
+        handleRequest("Users/UpdateUserPassword", "PUT", userDto);
     }
 
     async function updateUser() {
-        try {
-            const response = await fetch(`${API_URL}/Users/UpdateUser`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${user.token}`,
-                },
-                body: JSON.stringify(user),
-            });
-
-            if (!response.ok) {
-                console.log(response);
-            }
-
-            const updatedUser = await response.json();
-            if (updatedUser.success) {
-                await UserService.setUser(updatedUser.data);
-                navigate("/");
-            } else {
-                console.log(updatedUser.message);
-            }
-        } catch (error) {
-            console.log(
-                "There was a problem with the fetch operation: ",
-                error.message
-            );
-        }
+        handleRequest("Users/UpdateUser", "PUT", user);
     }
 </script>
 
+<Menu />
 {#if user}
     <div class="container">
-        <Menu />
         <h2>Profile</h2>
         <form on:submit|preventDefault={updateUser}>
             <div class="form-group">
@@ -170,6 +140,7 @@
                 >Change password</button
             >
         </form>
+
         <button on:click={UserService.logout} class="btn btn-danger"
             >Logout</button
         >
