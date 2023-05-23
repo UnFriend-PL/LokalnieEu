@@ -25,7 +25,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <Menu />
 
-        <a class="navbar-brand" href="/" use:link>Twoja Aplikacja</a>
+        <a class="navbar-brand" href="/" use:link>LokalnieEU</a>
         <button
             class="navbar-toggler"
             type="button"
